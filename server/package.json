@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "apollo-server": "^3.6.6",
+    "apollo-server": "^3.6.7",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "graphql": "^16.3.0",

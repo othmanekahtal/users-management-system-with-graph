@@ -1,16 +1,21 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-
+import {Navigate, Route, Routes} from 'react-router-dom'
+import SignUp from './sign-up'
+import SignIn from './sign-in'
+import Home from './home'
 const Views = () => (
   <Routes>
     <Route index element={<div>index</div>} />
-    <Route path="/home" element={<div>home</div>} />
-    <Route path="/dashboard/*" element={<Navigate to="/home" />} />
-    <Route path="/posts" element={<div>posts</div>}>
-      <Route index element={<div>This is index</div>} />
-      <Route path=":id" element={<div>post</div>} />
+    <Route path="/sign-in" element={<SignIn />} />
+    <Route path="/sign-up" element={<SignUp />} />
+    <Route path="/home" element={<Home />} />
+    <Route path="/dashboard" element={<Navigate to="/home" />} />
+    <Route path="/users">
+      <Route index element={<Home />} />
+      <Route path="add-user" element={<>add user</>} />
+      <Route path="update-user/:id" element={<>update user</>} />
     </Route>
     <Route path="*" element={<div>Not found</div>} />
   </Routes>
-);
+)
 
-export default Views;
+export default Views
