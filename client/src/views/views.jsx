@@ -4,11 +4,11 @@ import SignIn from './sign-in'
 import Home from './home'
 const Views = () => (
   <Routes>
-    <Route index element={<div>index</div>} />
+    <Route index element={<Navigate to="/users" />} />
     <Route path="/sign-in" element={<SignIn />} />
     <Route path="/sign-up" element={<SignUp />} />
-    <Route path="/home" element={<Home />} />
-    <Route path="/dashboard" element={<Navigate to="/home" />} />
+    <Route path="/home" element={<Navigate to="/users" />} />
+    <Route path="/dashboard" element={<Navigate to="/users" />} />
     <Route path="/users">
       <Route index element={<Home />} />
       <Route path="add-user" element={<>add user</>} />
