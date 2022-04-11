@@ -30,7 +30,8 @@ const httpServer = http.createServer(app)
     schema: makeExecutableSchema({typeDefs, resolvers}),
     context: ({req}) => {
       const token = req.get('Authorization') || ''
-      return {user: auth(token.replace('Bearer', ''))}
+      const authenticated = auth(token)
+      return {authenticated}
     },
   })
   // app.use(serverExpress)

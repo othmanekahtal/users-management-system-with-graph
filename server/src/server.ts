@@ -1,5 +1,4 @@
 import express from 'express'
-import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import helmet from 'helmet'
 import mongoSanitize from 'express-mongo-sanitize'
@@ -9,10 +8,9 @@ import ErrorException from '@controllers/errorException.controller'
 const server = express()
 
 // Set security HTTP headers
-server.use(helmet())
-// Development logging
-if (process.env.NODE_ENV === 'development') {
-  server.use(morgan('dev'))
+
+if (process.env.NODE_ENV == 'production') {
+  server.use(helmet())
 }
 
 // Limit requests from same API

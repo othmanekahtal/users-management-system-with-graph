@@ -6,8 +6,8 @@ export const auth = (token: string) => {
     if (token) {
       return jwt.verify(token, JWT_SECRET as string)
     }
-    return null
   } catch (error) {
-    return null
+    throw new Error("Can't authenticate user")
   }
+  return null
 }

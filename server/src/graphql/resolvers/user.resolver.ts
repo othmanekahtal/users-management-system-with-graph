@@ -1,111 +1,106 @@
-// import {Response, Request, NextFunction} from 'express'
-// import AsyncCatch from '@utils/asyncCatch'
-// import ErrorHandler from '@utils/errorHandler'
-// import {
-//   getAllUser,
-//   updateUser as updateUserService,
-// } from '@services/user.service'
-// import {Types} from 'mongoose'
+import userModel from '@models/userModel'
+import {sign} from 'jsonwebtoken'
 
-import {getAllUser, getSPecificUser} from '@services/user.service'
-import {
-  MutationCreateUserArgs,
-  MutationDeleteUserArgs,
-  Resolvers,
-  User,
-} from 'generated/graphql'
-
-// const filterObj = (obj: {[x: string]: string}, ...allowedFields: string[]) => {
-//   const newObj: {[x: string]: string} = {}
-//   Object.keys(obj).forEach(el => {
-//     if (allowedFields.includes(el)) newObj[el] = obj[el]
-//   })
-//   return newObj
-// }
-
-// export const getAllUsers = AsyncCatch(async (_: Request, res: Response) => {
-//   const users = await getAllUser({})
-//   console.log(users)
-//   // SEND RESPONSE
-//   res.status(200).json({
-//     status: 'success',
-//     results: users?.length,
-//     data: {
-//       users,
-//     },
-//   })
-// })
-
-// export const getUser = AsyncCatch(async (response: Response) => {
-//   //TODO: get user by id
-//   // const user = await getAllUser({_id: Types.ObjectId(response.params.id)})
-//   response.status(500).json({
-//     message: 'failed',
-//     result: '<route not define yeat>',
-//   })
-// })
-
-// export const updateUser = AsyncCatch(
-//   async (req: Request, res: Response, next: NextFunction) => {
-//     const {id} = req.body
-//     // 1) Create error if user send password data
-//     if (req.body.password || req.body.passwordConfirm) {
-//       return next(
-//         new ErrorHandler({
-//           message:
-//             'This route is not for password updates. Please use /update-password.',
-//           statusCode: 400,
-//         }),
-//       )
-//     }
-
-//     // 2) Filtered out unwanted fields names that are not allowed to be updated
-//     const filteredBody = filterObj(req.body, 'name', 'email')
-
-//     // 3) Update user document
-//     const updatedUser = await updateUserService(
-//       id as Types.ObjectId,
-//       filteredBody,
-//       {
-//         new: true,
-//         runValidators: true,
-//       },
-//     )
-
-//     res.status(200).json({
-//       status: 'success',
-//       data: {
-//         user: updatedUser,
-//       },
-//     })
-//   },
-// )
-
-// export const createUser = AsyncCatch(async (req: Request, res: Response) => {
-//   // add logic here
-// })
-const resolvers: Resolvers = {
+import {Resolvers} from 'generated/graphql'
+import {Types} from 'mongoose'
+const generateToken = (id: Types.ObjectId) => {
+  console.log(id)
+  return sign({id}, process.env.JWT_SECRET, {
+    expiresIn: '90d',
+  })
+}
+export const resolvers: Resolvers = {
   Query: {
-    getUser: async (_, {id}): Promise<User> => {
-        return  await getSPecificUser({_id: id})
-    },
-    getUsers: async (_, __, {user}): Promise<User[]> => {
-      if (user) {
-        return await getAllUser({})
+    getUser: async (_, {id}, authenticated) => {
+      try {
+        if (!authenticated) {
+          return await userModel.findById(id)
+        }
+      } catch (_) {
+        throw new Error('Error while fetching user')
       }
-      throw new Error('Unauthorized')
+      return null
+    },
+    getUsers: async (_, __, authenticated) => {
+      console.log(authenticated)
+      try {
+        if (authenticated) {
+          return await userModel.find({})
+        }
+      } catch (error) {
+        throw new Error('Error while fetching users')
+      }
+      return null
     },
   },
   Mutation: {
-    createUser: (_, {input}: MutationCreateUserArgs) => {},
-    authorizeUser: async (_, {email, password}: MutationAuthorizeUserArgs): => {
-      return await findOne({email, password})
+    createUser: async (_, {input}) => {
+      try {
+        const user = await userModel.create(input)
+        return {
+          user,
+          code: 201,
+          success: true,
+          message: 'user created successfully',
+        }
+      } catch (error) {
+        throw new Error(`Error while creating user: ${error}`)
+      }
     },
-    updateUser: (_, {input}: MutationDeleteUserArgs) => {},
-    deleteUser: (_, {input}: MutationDeleteUserArgs) => {},
+    authorizeUser: async (_, {email, password}) => {
+      try {
+        let user = await userModel.findOne({email, password})
+        if (!user) {
+          throw new Error("Can't authenticate user")
+        }
+        user.id = user._id
+        user = {...user}
+        const token = generateToken(user.id)
+        return {
+          user: user,
+          token,
+        }
+      } catch (error) {
+        throw new Error(`Error while authenticating user: ${error}`)
+      }
+    },
+    updateUser: async (_, {input}, authenticated) => {
+      const {id, ...user} = input
+
+      try {
+        if (!authenticated) {
+          throw new Error('endpoint not authorized')
+        }
+
+        const newUser = await userModel.findByIdAndUpdate(id, user, {
+          new: true,
+        })
+
+        return {
+          user: newUser,
+          code: 200,
+          success: true,
+          message: 'user updated successfully',
+        }
+      } catch (error) {
+        throw new Error("Can't update user")
+      }
+    },
+    deleteUser: (_, {input}, authenticated) => {
+      const {id} = input
+      try {
+        if (!authenticated) {
+          throw new Error('endpoint not authorized')
+        }
+        userModel.findByIdAndDelete(id)
+        return {
+          code: 200,
+          success: true,
+          message: 'user deleted successfully',
+        }
+      } catch (error) {
+        throw new Error("Can't delete user")
+      }
+    },
   },
 }
-function MutationAuthorizeUserArgs(_: any, arg1: { email: any; password: any }, MutationAuthorizeUserArgs: any): import("generated/graphql").Resolver<import("generated/graphql").ResolverTypeWrapper<import("generated/graphql").GetUserResponse>, {}, any, import("generated/graphql").RequireFields<import("generated/graphql").MutationAuthorizeUserArgs, "email" | "password">> | undefined {
-    throw new Error('Function not implemented.')
-}
-

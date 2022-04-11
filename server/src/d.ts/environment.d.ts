@@ -9,11 +9,6 @@ declare global {
       LOCAL_DATABASE: string
       JWT_SECRET: Secret
       JWT_EXPIRE: string | number
-      EMAIL_USERNAME: string
-      EMAIL_PASSWORD: string
-      EMAIL_HOST: string
-      EMAIL_PORT: number
-      JWT_COOKIE_EXPIRES_IN: string | number
     }
   }
 }
