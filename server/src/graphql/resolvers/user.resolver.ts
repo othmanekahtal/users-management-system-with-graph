@@ -11,22 +11,23 @@ const generateToken = (id: Types.ObjectId) => {
 }
 export const resolvers: Resolvers = {
   Query: {
-    getUser: async (_, {id}, authenticated) => {
+    getUser: async (_, {id}, {authenticated}) => {
+      if (!authenticated) {
+        throw new Error('You are not authenticated')
+      }
       try {
-        if (!authenticated) {
-          return await userModel.findById(id)
-        }
+        return await userModel.findById(id)
       } catch (_) {
         throw new Error('Error while fetching user')
       }
       return null
     },
-    getUsers: async (_, __, authenticated) => {
-      console.log(authenticated)
+    getUsers: async (_, __, {authenticated}) => {
+      if (!authenticated) {
+        throw new Error('You are not authenticated')
+      }
       try {
-        if (authenticated) {
-          return await userModel.find({})
-        }
+        return await userModel.find({})
       } catch (error) {
         throw new Error('Error while fetching users')
       }
@@ -62,18 +63,16 @@ export const resolvers: Resolvers = {
         throw new Error(`Error while authenticating user: ${error}`)
       }
     },
-    updateUser: async (_, {input}, authenticated) => {
+    updateUser: async (_, {input}, {authenticated}) => {
       const {id, ...user} = input
 
+      if (!authenticated) {
+        throw new Error('endpoint not authorized')
+      }
       try {
-        if (!authenticated) {
-          throw new Error('endpoint not authorized')
-        }
-
         const newUser = await userModel.findByIdAndUpdate(id, user, {
           new: true,
         })
-
         return {
           user: newUser,
           code: 200,
@@ -84,13 +83,20 @@ export const resolvers: Resolvers = {
         throw new Error("Can't update user")
       }
     },
-    deleteUser: (_, {input}, authenticated) => {
+    deleteUser: async (_, {input}, {authenticated}) => {
       const {id} = input
+      if (!authenticated) {
+        throw new Error('endpoint not authorized')
+      }
       try {
-        if (!authenticated) {
-          throw new Error('endpoint not authorized')
-        }
-        userModel.findByIdAndDelete(id)
+        const deletedUser = await userModel.findByIdAndDelete(id)
+        if (!deletedUser)
+          return {
+            code: 400,
+            success: false,
+            message: 'user not found',
+          }
+
         return {
           code: 200,
           success: true,
