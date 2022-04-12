@@ -1,10 +1,10 @@
-import userModel from '@models/userModel'
+import userModel from '@models/user.model'
 import {sign} from 'jsonwebtoken'
 
 import {Resolvers} from 'generated/graphql'
 import {Types} from 'mongoose'
 const generateToken = (id: Types.ObjectId) => {
-  console.log(id)
+  console.log(process.env.JWT_SECRET)
   return sign({id}, process.env.JWT_SECRET, {
     expiresIn: '90d',
   })

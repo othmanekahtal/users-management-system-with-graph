@@ -1,12 +1,14 @@
-import jwt from 'jsonwebtoken'
+import {verify} from 'jsonwebtoken'
 
-const {JWT_SECRET} = process.env
 export const auth = (token: string) => {
+  const secret = process.env.JWT_SECRET
   try {
     if (token) {
-      return jwt.verify(token, JWT_SECRET as string)
+      return verify(token.replace('Bearer ', ''), secret)
     }
   } catch (error) {
+    console.log(error)
+
     throw new Error("Can't authenticate user")
   }
   return null
