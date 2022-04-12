@@ -49,15 +49,13 @@ export const resolvers: Resolvers = {
     },
     authorizeUser: async (_, {email, password}) => {
       try {
-        let user = await userModel.findOne({email, password})
+        const user = await userModel.findOne({email, password})
         if (!user) {
           throw new Error("Can't authenticate user")
         }
-        user.id = user._id
-        user = {...user}
         const token = generateToken(user.id)
         return {
-          user: user,
+          user,
           token,
         }
       } catch (error) {
