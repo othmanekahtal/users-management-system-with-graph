@@ -18,18 +18,43 @@ import EditIcon from '@mui/icons-material/Edit'
 import Button from '@mui/material/Button'
 import {Link} from 'react-router-dom'
 import IconButton from '@mui/material/IconButton'
-
+import {useMutation, useQuery} from '@apollo/client'
+import {GET_ALL_USERS_QUERY} from '../graphql/queries/users'
+import {DELETE_USER_MUTATION} from '../graphql/mutations/users'
+import {Error500} from './error500'
+import {useNavigate} from 'react-router-dom'
+import {Loading} from '../components/loading'
+import {Context} from '../context/provider'
 const theme = createTheme()
-
-const rows = [
-  {
-    firstName: 'firstName',
-    lastName: 'lastName',
-    email: 'example@example.com',
-    id: '12ds-sd13sd',
-  },
-]
 export default function Home() {
+  const navigate = useNavigate()
+  const [, dispatcher] = React.useContext(Context)
+  const {
+    loading,
+    error,
+    data: users,
+  } = useQuery(GET_ALL_USERS_QUERY, {
+    onError: ({graphQLErrors}) => {
+      if (graphQLErrors.length) {
+        graphQLErrors.forEach(({message, locations, path, extensions}) => {
+          if (extensions.code === 'UNAUTHENTICATED') {
+            dispatcher({action: 'logout'})
+            navigate('/sign-in')
+          }
+          console.log(
+            `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+          )
+        })
+      }
+    },
+  })
+  const [delete_mutation] = useMutation(DELETE_USER_MUTATION, {
+    refetchQueries: [GET_ALL_USERS_QUERY],
+  })
+  if (loading) return <Loading />
+  if (error?.networkError) {
+    return <Error500 />
+  }
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="md">
@@ -69,7 +94,7 @@ export default function Home() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map(row => (
+                {users.getUsers.map(row => (
                   <TableRow
                     key={row.id}
                     sx={{'&:last-child td, &:last-child th': {border: 0}}}
@@ -80,7 +105,11 @@ export default function Home() {
                     <TableCell align="center">
                       <IconButton
                         aria-label="delete"
-                        onClick={() => alert('delete')}
+                        onClick={() => {
+                          delete_mutation({
+                            variables: {input: {id: row.id}},
+                          })
+                        }}
                       >
                         <DeleteIcon sx={{color: red[500]}} />
                       </IconButton>

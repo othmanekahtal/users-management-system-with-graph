@@ -9,19 +9,45 @@ import Typography from '@mui/material/Typography'
 import Container from '@mui/material/Container'
 import {createTheme, ThemeProvider} from '@mui/material/styles'
 import {Link as LinkReact} from 'react-router-dom'
-
+import {useMutation} from '@apollo/client'
+import {CREATE_USER_MUTATION} from '././../graphql/mutations/users'
+import toast from 'react-hot-toast'
+import {Error500} from './error500'
+import {useNavigate} from 'react-router-dom'
 const theme = createTheme()
-
 export default function SignUp() {
+  const navigate = useNavigate()
+
+  const [mutate_creation, {error}] = useMutation(CREATE_USER_MUTATION)
   const handleSubmit = event => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    console.log({
+
+    const input = {
       email: data.get('email'),
       password: data.get('password'),
+      firstName: data.get('firstName'),
+      lastName: data.get('lastName'),
+    }
+    console.log(input)
+    if (!input.email | !input.password | !input.firstName | !input.lastName) {
+      toast.error('Please fill all the fields')
+      return
+    }
+    mutate_creation({
+      variables: {
+        input,
+      },
+      onCompleted: ({createUser}) => {
+        console.log(createUser)
+        toast.success('You are now registered')
+        navigate('/sign-in')
+      },
     })
   }
-
+  if (error?.networkError) {
+    return <Error500 />
+  }
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">

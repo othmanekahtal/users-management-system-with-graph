@@ -8,20 +8,52 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Container from '@mui/material/Container'
 import {createTheme, ThemeProvider} from '@mui/material/styles'
-import {Link as LinkReact} from 'react-router-dom'
+import {Link as LinkReact, useNavigate} from 'react-router-dom'
+import {useMutation} from '@apollo/client'
+import {AUTHORIZE_USER_MUTATION} from '././../graphql/mutations/users'
+import toast from 'react-hot-toast'
+import {Context} from '../context/provider'
+import {Error500} from './error500'
+import {Loading} from '../components/loading'
 
 const theme = createTheme()
-
 export default function SignIn() {
+  const [{token}, dispatcher] = React.useContext(Context)
+  const [mutate_authorization, {loading, error}] = useMutation(
+    AUTHORIZE_USER_MUTATION,
+  )
+  const navigate = useNavigate()
+  if (token) {
+    navigate('/')
+  }
   const handleSubmit = event => {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
+    if (!data.get('email') | !data.get('password')) {
+      toast.error('Please fill all the fields')
+      return
+    }
+    mutate_authorization({
+      variables: {
+        email: data.get('email'),
+        password: data.get('password'),
+      },
+      onCompleted: ({authorizeUser}) => {
+        localStorage.setItem('token', authorizeUser.token)
+        dispatcher({
+          action: 'authorize',
+          value: authorizeUser.token,
+        })
+        console.log(token)
+        toast.success('You are now authorized')
+        navigate('../', {replace: true})
+      },
     })
   }
-
+  if (loading) return <Loading />
+  if (error?.networkError) {
+    return <Error500 />
+  }
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
