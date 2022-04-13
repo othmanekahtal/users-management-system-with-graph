@@ -1,6 +1,6 @@
 import userModel from '@models/user.model'
 import {sign} from 'jsonwebtoken'
-
+import {AuthenticationError, UserInputError} from 'apollo-server-express'
 import {Resolvers} from 'generated/graphql'
 import {Types} from 'mongoose'
 const generateToken = (id: Types.ObjectId) => {
@@ -9,12 +9,15 @@ const generateToken = (id: Types.ObjectId) => {
     expiresIn: '90d',
   })
 }
+function willAuthenticate(authenticated: null | {[x: string]: string}) {
+  if (!authenticated) {
+    throw new AuthenticationError('you must be logged in')
+  }
+}
 export const resolvers: Resolvers = {
   Query: {
     getUser: async (_, {id}, {authenticated}) => {
-      if (!authenticated) {
-        throw new Error('You are not authenticated')
-      }
+      willAuthenticate(authenticated)
       try {
         return await userModel.findById(id)
       } catch (_) {
@@ -23,9 +26,8 @@ export const resolvers: Resolvers = {
       return null
     },
     getUsers: async (_, __, {authenticated}) => {
-      if (!authenticated) {
-        throw new Error('You are not authenticated')
-      }
+      willAuthenticate(authenticated)
+
       try {
         return await userModel.find({})
       } catch (error) {
@@ -36,6 +38,8 @@ export const resolvers: Resolvers = {
   },
   Mutation: {
     createUser: async (_, {input}) => {
+      console.log(input)
+
       try {
         const user = await userModel.create(input)
         return {
@@ -45,14 +49,15 @@ export const resolvers: Resolvers = {
           message: 'user created successfully',
         }
       } catch (error) {
-        throw new Error(`Error while creating user: ${error}`)
+        console.log(error)
+        throw new Error(`we can't create user in this moment try again later`)
       }
     },
     authorizeUser: async (_, {email, password}) => {
       try {
         const user = await userModel.findOne({email, password})
         if (!user) {
-          throw new Error("Can't authenticate user")
+          throw new Error("User doesn't exist")
         }
         const token = generateToken(user.id)
         return {
@@ -60,15 +65,12 @@ export const resolvers: Resolvers = {
           token,
         }
       } catch (error) {
-        throw new Error(`Error while authenticating user: ${error}`)
+        throw new UserInputError(`email or password is incorrect !`)
       }
     },
     updateUser: async (_, {input}, {authenticated}) => {
       const {id, ...user} = input
-
-      if (!authenticated) {
-        throw new Error('endpoint not authorized')
-      }
+      willAuthenticate(authenticated)
       try {
         const newUser = await userModel.findByIdAndUpdate(id, user, {
           new: true,
@@ -85,9 +87,7 @@ export const resolvers: Resolvers = {
     },
     deleteUser: async (_, {input}, {authenticated}) => {
       const {id} = input
-      if (!authenticated) {
-        throw new Error('endpoint not authorized')
-      }
+      willAuthenticate(authenticated)
       try {
         const deletedUser = await userModel.findByIdAndDelete(id)
         if (!deletedUser)
