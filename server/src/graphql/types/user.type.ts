@@ -1,7 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const apollo_server_core_1 = require("apollo-server-core");
-const user = (0, apollo_server_core_1.gql) `
+import {gql} from 'apollo-server-core'
+
+const user = gql`
   type User {
     id: ID!
     firstName: String!
@@ -49,6 +48,5 @@ const user = (0, apollo_server_core_1.gql) `
     updateUser(input: UpdateUserInput!): MutateUserResponse!
     deleteUser(input: DeleteUserInput!): DeleteUserResponse!
   }
-`;
-exports.default = user;
-//# sourceMappingURL=user.type.js.map
+`
+export default user

@@ -2,7 +2,7 @@ import {join} from 'path'
 import {loadFilesSync} from '@graphql-tools/load-files'
 import {mergeTypeDefs} from '@graphql-tools/merge'
 
-const typesPath = join(__dirname, './types/*.type.graphql')
+const typesPath = join(__dirname, './types/*.type.*')
 console.log(typesPath)
 
 const typesArray = loadFilesSync(typesPath)
