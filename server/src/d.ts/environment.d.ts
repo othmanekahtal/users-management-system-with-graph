@@ -9,6 +9,7 @@ declare global {
       LOCAL_DATABASE: string
       JWT_SECRET: Secret
       JWT_EXPIRE: string | number
+      APOLLO_KEY: string
     }
   }
 }
