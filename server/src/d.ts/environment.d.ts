@@ -10,6 +10,8 @@ declare global {
       JWT_SECRET: Secret
       JWT_EXPIRE: string | number
       APOLLO_KEY: string
+      APOLLO_GRAPH_REF: string
+      APOLLO_SCHEMA_REPORTING: boolean
     }
   }
 }
